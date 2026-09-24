@@ -171,18 +171,88 @@ def extract_pdf_pages(pdf_path: Path):
     return documents
 
 
-def chunk_documents(documents):
+def chunk_text_with_tolerance(text: str, target_size: int = 800, tolerance: int = 150, overlap: int = 150, min_chunk_words: int = 15):
     """
-    Splits documents into coherent chunks with overlap using RecursiveCharacterTextSplitter.
+    Adaptive Chunking with Tolerance:
+    - Splits text on natural paragraph (\\n\\n) and sentence boundaries.
+    - Uses a soft target window [target_size - tolerance, target_size + tolerance].
+    - Sentence-snaps overlap so chunks never start or end mid-sentence.
+    - Absorbs small leftover remnants into the previous chunk instead of creating orphan tails.
+    - Discards non-semantic noise chunks under min_chunk_words.
     """
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150,
-        separators=["\n\n", "\n", ". ", " ", ""]
-    )
-    chunks = splitter.split_documents(documents)
-    print(f"[Chunker] Generated {len(chunks)} chunks across all documents.")
-    return chunks
+    raw_paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+    elements = []
+    for p in raw_paragraphs:
+        sents = re.split(r'(?<=[.?!])\s+', p)
+        for s in sents:
+            s_clean = s.strip()
+            if s_clean:
+                elements.append(s_clean)
+
+    if not elements:
+        return []
+
+    chunks = []
+    current_elements = []
+    current_len = 0
+
+    for el in elements:
+        el_len = len(el)
+        # If adding this sentence fits within target + tolerance, keep accumulating
+        if current_len + el_len <= (target_size + tolerance):
+            current_elements.append(el)
+            current_len += el_len + 1
+        else:
+            # Commit current chunk
+            if current_elements:
+                chunks.append(' '.join(current_elements))
+
+            # Build sentence-snapped overlap buffer from the tail of current chunk
+            overlap_elements = []
+            overlap_len = 0
+            for prev in reversed(current_elements):
+                if overlap_len + len(prev) <= overlap:
+                    overlap_elements.insert(0, prev)
+                    overlap_len += len(prev) + 1
+                else:
+                    break
+
+            current_elements = overlap_elements + [el]
+            current_len = sum(len(x) for x in current_elements) + len(current_elements)
+
+    # Handle final remnant: absorb into last chunk if small, otherwise append
+    if current_elements:
+        final_text = ' '.join(current_elements)
+        if chunks and len(final_text) <= (target_size // 2):
+            new_elements = [el for el in current_elements if el not in chunks[-1]]
+            if new_elements:
+                chunks[-1] += ' ' + ' '.join(new_elements)
+        else:
+            chunks.append(final_text)
+
+    # Discard non-semantic noise fragments (e.g. photo credits, single words)
+    return [c.strip() for c in chunks if len(c.strip().split()) >= min_chunk_words]
+
+
+def chunk_documents(documents, target_size: int = 800, tolerance: int = 150, overlap: int = 150):
+    """
+    Applies adaptive tolerance chunking across all extracted documents.
+    """
+    all_chunks = []
+    for doc in documents:
+        text_chunks = chunk_text_with_tolerance(
+            doc.page_content,
+            target_size=target_size,
+            tolerance=tolerance,
+            overlap=overlap
+        )
+        for chunk_idx, text in enumerate(text_chunks):
+            chunk_meta = dict(doc.metadata)
+            chunk_meta["chunk_idx"] = chunk_idx
+            all_chunks.append(Document(page_content=text, metadata=chunk_meta))
+
+    print(f"[Chunker] Generated {len(all_chunks)} adaptive chunks with tolerance (no orphan fragments).")
+    return all_chunks
 
 
 def generate_chunk_id(source: str, page: int, text: str) -> str:
@@ -205,10 +275,17 @@ def embed_and_upsert(chunks):
     # Initialize ChromaDB persistent client
     CHROMA_DIR.mkdir(parents=True, exist_ok=True)
     chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    
+
+    if "--reset" in sys.argv:
+        print(f"[VectorDB] '--reset' flag detected. Wiping collection '{COLLECTION_NAME}' for clean re-ingest...")
+        try:
+            chroma_client.delete_collection(COLLECTION_NAME)
+        except Exception:
+            pass
+
     # Initialize Embeddings (OpenAI or local ONNX)
     embeddings = get_embeddings()
-    
+
     # Get or create collection
     collection = chroma_client.get_or_create_collection(
         name=COLLECTION_NAME,

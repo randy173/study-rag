@@ -182,11 +182,11 @@ def optimize_search_queries(llm, user_query: str, chat_history: list) -> list[st
 
     try:
         response = llm.invoke(prompt)
-        queries = [
-            line.strip().strip('- 1234567890."\'')
-            for line in response.content.strip().splitlines()
-            if line.strip()
-        ]
+        queries = []
+        for line in response.content.strip().splitlines():
+            cleaned = re.sub(r'^\s*[\d\.\-\*\)\>\#]+\s*', '', line).strip(' "\'')
+            if cleaned:
+                queries.append(cleaned)
         if not queries:
             queries = [user_query]
         return queries[:2]

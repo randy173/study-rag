@@ -27,7 +27,7 @@ User question in Streamlit
 | Component | Tool / Model | Rationale |
 |---|---|---|
 | PDF Parsing | PyMuPDF (`pymupdf`) | Fast, block-aware reading order (`sort=True`) for multi-column textbooks |
-| Chunking | LangChain TextSplitters | `RecursiveCharacterTextSplitter` respects paragraph and sentence breaks |
+| Chunking | Adaptive Tolerance Chunker | Soft boundary window [650–950], sentence-snapped overlap, zero orphan fragments |
 | Embeddings | Local ONNX `all-MiniLM-L6-v2` (or OpenAI) | 100% Free, runs offline locally with zero API keys or rate limits |
 | Vector DB | ChromaDB (local persistence) | Cosine distance, local disk persistence in `chroma_db/`, idempotent MD5 upserts |
 | Conversational RAG | LangChain LCEL | Modern `create_history_aware_retriever` + `create_retrieval_chain` |
@@ -63,9 +63,9 @@ py -m pip install -r requirements.txt
 ### 3. Run Ingestion
 Make sure your textbook PDF is inside `data/`, then run:
 ```powershell
-py ingest.py
+py ingest.py --reset
 ```
-*Note: Ingestion is idempotent. If you add new pages or re-run, existing chunks with identical MD5 hashes are automatically skipped.*
+*Note: Using `--reset` wipes any old fragmented collections and cleanly indexes using adaptive tolerance chunking. Subsequent runs without `--reset` are idempotent.*
 
 ### 4. Launch the Study App
 ```powershell

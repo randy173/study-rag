@@ -1,0 +1,49 @@
+# Environment variables and secrets (DO NOT COMMIT)
+.env
+.env*.local
+*.env
+!.env.example
+
+# Vector Database (local Chroma storage)
+chroma_db/
+
+# Data files (large PDFs and textbook documents)
+data/*.pdf
+data/*.epub
+data/*.mobi
+data/*.txt
+!data/.gitkeep
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Streamlit secrets and run cache
+.streamlit/secrets.toml
+
+# IDE and Editor configs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Operating System files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Logs
+*.log
