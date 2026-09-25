@@ -120,19 +120,27 @@ python3 ingest.py --reset
 
 ---
 
-### 6. Launch the Web Interface
+### 6. Launch the Application
 
-Start the Streamlit application:
+You can launch both the **Flask Backend API** and the **React Modern Frontend**:
 
+#### Option A: Quickstart via `main.py`
+In two terminal tabs:
 ```powershell
-# Windows
-py -m streamlit run app.py
+# Tab 1: Start Flask Backend (Port 5000)
+py main.py server
 
-# macOS / Linux
-python3 -m streamlit run app.py
+# Tab 2: Start React Frontend (Port 3000)
+cd frontend
+npm run dev
 ```
 
-Your browser will automatically open to **[http://localhost:8501](http://localhost:8501)**!
+#### Option B: Production Single-Server Mode
+Because the React app has been compiled into `frontend/dist/`, running `server.py` automatically serves the full React frontend and API together:
+```powershell
+py server.py
+```
+Then visit **[http://localhost:5000](http://localhost:5000)**!
 
 ---
 
@@ -142,9 +150,11 @@ Your browser will automatically open to **[http://localhost:8501](http://localho
 |---|---|
 | `py ingest.py` | Ingests all PDFs in `data/` without wiping existing database entries. |
 | `py ingest.py --reset` | Wipes existing `textbook_study` collection and performs a fresh adaptive re-indexing. |
-| `py -m streamlit run app.py` | Launches the interactive study assistant UI. |
+| `py server.py` | Launches the Flask REST API (Port 5000) and serves compiled React frontend. |
+| `cd frontend && npm run dev` | Launches the Vite React frontend with instant hot reload (Port 3000). |
+| `py main.py server` | Dispatcher shortcut to run the Flask backend. |
+| `py main.py frontend` | Dispatcher shortcut to start the React development server. |
 | `py main.py ingest` | Dispatcher shortcut to run PDF ingestion. |
-| `py main.py app` | Dispatcher shortcut to launch the Streamlit frontend. |
 | `py diagnose_retrieval.py` | Diagnostic script to test query distance metrics and vector retrieval directly. |
 
 ---
@@ -158,8 +168,9 @@ Your browser will automatically open to **[http://localhost:8501](http://localho
 | **Embedding Engine** | ONNX `all-MiniLM-L6-v2` | Zero-cost, CPU-based local embeddings (or OpenAI fallback) |
 | **Vector Store** | ChromaDB (`chromadb`) | Local persistent disk storage with cosine distance metrics |
 | **LLM Inference** | Groq (`openai/gpt-oss-120b`) | Ultra-fast token generation with low latency |
-| **Framework** | LangChain Core / Community | Retrieval chains and prompt formatting |
-| **Web UI** | Streamlit | Chat interface, session state, and collapsible citation drawers |
+| **Backend API** | Flask + Flask-CORS | High-throughput REST API with structured JSON endpoints |
+| **Frontend UI** | React + Vite (Vanilla CSS) | Modern glassmorphism UI, citation drawers, query breakdowns |
+
 
 ---
 

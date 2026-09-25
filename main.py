@@ -1,16 +1,18 @@
 """
 study-rag Entry Point Helper
 
-The application is decoupled into two dedicated modules:
+The application is decoupled into:
 1. Ingestion: Processes PDFs, chunks text, and builds the local ChromaDB vector store.
-2. Web UI: Launches the Streamlit study assistant interface.
+2. Flask Backend: REST API serving RAG vector search, query optimization, and LLM inference.
+3. React Frontend: Interactive modern study UI with live citations.
 
 Usage:
   - Ingest textbook PDFs:
       py ingest.py
-
-  - Launch interactive UI:
-      py -m streamlit run app.py
+  - Launch Flask Backend API (Port 5000):
+      py server.py
+  - Launch React Frontend (Port 3000):
+      cd frontend && npm run dev
 """
 
 import sys
@@ -18,17 +20,25 @@ import subprocess
 
 def main():
     print("=" * 60)
-    print("  📚 study-rag: Textbook AI Assistant")
+    print("  [Study-RAG] Textbook AI Assistant (Flask + React)")
     print("=" * 60)
     print("Available commands:")
-    print("  1. Ingest PDFs in data/  -> run: py ingest.py")
-    print("  2. Start Web Interface   -> run: py -m streamlit run app.py")
+    print("  1. Ingest PDFs in data/     -> py ingest.py")
+    print("  2. Start Flask Backend API  -> py server.py")
+    print("  3. Start React Frontend     -> cd frontend; npm run dev")
     print("=" * 60)
     
-    if len(sys.argv) > 1 and sys.argv[1] == "ingest":
-        subprocess.run([sys.executable, "ingest.py"])
-    elif len(sys.argv) > 1 and sys.argv[1] == "app":
-        subprocess.run([sys.executable, "-m", "streamlit", "run", "app.py"])
+    if len(sys.argv) > 1:
+        cmd = sys.argv[1].lower()
+        if cmd == "ingest":
+            subprocess.run([sys.executable, "ingest.py"])
+        elif cmd == "server":
+            subprocess.run([sys.executable, "server.py"])
+        elif cmd == "app":
+            subprocess.run([sys.executable, "-m", "streamlit", "run", "app.py"])
+        elif cmd in ("frontend", "ui"):
+            subprocess.run(["npm", "run", "dev"], cwd="frontend", shell=True)
 
 if __name__ == "__main__":
     main()
+
