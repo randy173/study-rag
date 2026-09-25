@@ -4,8 +4,8 @@
 *.env
 !.env.example
 
-# Vector Database (local Chroma storage)
-chroma_db/
+# Vector Database (local Chroma storage - enabled for deployment)
+# chroma_db/
 
 # Data files (large PDFs and textbook documents)
 data/*.pdf
@@ -51,7 +51,7 @@ $RECYCLE.BIN/
 # Node & Frontend dependencies
 frontend/node_modules/
 node_modules/
-frontend/dist/
-dist/
+# frontend/dist/
+# dist/
 .eslintcache
 
